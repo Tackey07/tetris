@@ -44,9 +44,9 @@ class Block_Controller(object):
             nextMove["strategy"]["use_hold_function"]="y"  #strategy[4]=="y" or "n"                 
 
             return nextMove
-        # print GameStatus
-        # print("=================================================>")
-        # pprint.pprint(GameStatus, width = 61, compact = True)
+        #print GameStatus
+        print("=================================================>")
+        pprint.pprint(GameStatus, width = 61, compact = True)
 
         # get data from GameStatus
         CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"]  #この変数に、現在のshapeがとりうる回転状態のリストを受け取ります。
@@ -68,9 +68,9 @@ class Block_Controller(object):
         HoldShapeIndex = GameStatus["block_info"]["holdShape"]["index"]  #この変数に、現在のshapeがとりうる回転状態のリストを受け取ります。
         self.HoldShape_class = GameStatus["block_info"]["holdShape"]["class"]
         
-        EvalValue_org ,nHoles_org,LIST_TOP_org,LIST_BOTTOM_org,Right_Side_Exist_org,fullLine_CANDIDATE_org= self.calcEvaluationValueSample(self.board_backboard,"Start",0,0,0)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
+        EvalValue_org ,nHoles_org,LIST_TOP_org,LIST_BOTTOM_org,Right_Side_Exist_org,fullLine_CANDIDATE_org,Right_Side_TOP_org= self.calcEvaluationValueSample(self.board_backboard,"Start",0,0,0)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
         # print(f"EvalValue_org,nHoles_org,LIST_TOP_org,LIST_BOTTOM_org,Right_Side_Exist_org,fullLine_CANDIDATE_org={EvalValue_org}, {nHoles_org}, {LIST_TOP_org}, {LIST_BOTTOM_org} ,{Right_Side_Exist_org}, {fullLine_Candidate_org}")
-
+    
         # search best nextMove -->
         strategy = [0,0,1,1,"n"]
         LatestEvalValue = -100000
@@ -86,7 +86,7 @@ class Block_Controller(object):
                 TargetShapeRange=HoldShapeDirectionRange      #for文を回し評価する対象をHoldShapeとする。
                 targetShape_class= self.HoldShape_class
                 TargetIndex=HoldShapeIndex
-            if fullLine_CANDIDATE_org>=4:
+            if fullLine_CANDIDATE_org>=4 and Right_Side_TOP_org<LIST_TOP_org:
                 if TargetIndex==1:
                     CHECKMATE = "y1"     #変数UseHold0が"y"なら、holdされたミノに交換されてnextMove操作を実行。
                 if TargetIndex==2:
@@ -107,7 +107,9 @@ class Block_Controller(object):
                         # get board data, as if dropdown block
                         board = self.getBoard(self.board_backboard, targetShape_class, direction0, x0)
                         # evaluate board
-                        EvalValue_eval ,nHoles_eval,LIST_TOP_eval,LIST_BOTTOM_eval,Right_Side_Exist_eval,fullLine_CANDIDATE_eval= self.calcEvaluationValueSample(board,"Evaluate",nHoles_org,LIST_TOP_org,LIST_BOTTOM_org)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
+                        EvalValue_eval ,nHoles_eval,LIST_TOP_eval,LIST_BOTTOM_eval,Right_Side_Exist_eval,fullLine_CANDIDATE_eval,Right_Side_TOP_eval= self.calcEvaluationValueSample(board,"Evaluate",nHoles_org,LIST_TOP_org,LIST_BOTTOM_org)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
+                        # print(f"absDy_org={absDy_org}")
+                        # print(f"absDy_eval={absDy_eval}")
                         if EvalValue_eval > LatestEvalValue:
                             strategy = (direction0, x0, 1, 1,UseHold0)     #変数UseHold0が"y"なら、holdされたミノに交換されてnextMove操作を実行。
                             LatestEvalValue = EvalValue_eval
@@ -235,7 +237,7 @@ class Block_Controller(object):
         LIST_BOTTOM_Current=min(xTOP_LIST[0:9])
         LIST_BOTTOM_INDEX=xTOP_LIST[0:9].index(LIST_BOTTOM_Current)
         LIST_TOP_Current=max(xTOP_LIST)
-        LIST_TOP_Index=xTOP_LIST.index(LIST_TOP_Current)
+        LIST_TOP_INDEX=xTOP_LIST.index(LIST_TOP_Current)
         DyBOTTOM_Change=LIST_BOTTOM_Current-LIST_BOTTOM_prev
         DyTOP_Change=LIST_TOP_Current-LIST_TOP_prev
         DyTOP_BOTTOM=LIST_TOP_Current-LIST_BOTTOM_Current
@@ -256,6 +258,7 @@ class Block_Controller(object):
         holeCandidates = [0] * width
         holeConfirm = [0] * width
         Right_Side_Exist=False
+        Right_Side_TOP_Current=xTOP_LIST[9]
         ### check board
         # each y line
         for y in range(height - 1, 0, -1): #内側のfor ループで横一列をサーチし、このforループで縦方向をサーチ
@@ -277,7 +280,7 @@ class Block_Controller(object):
                     if holeCandidates[x] > 0:   #ブロックがそこにある事が確定した時点で、その下の穴候補は穴と確定される。
                         holeConfirm[x] += holeCandidates[x]  # update number of holes in target column.. その行における穴の数を確定
                         holeCandidates[x] = 0                # reset  その行における穴の数候補変数をリセット
-                    if holeConfirm[x] > 0:                   # 確定穴数が０以上なら（冗長なコードな気がするが）
+                    if holeConfirm[x] > 0:                   # 確定穴数が０以上なら
                         nIsolatedBlocks += 1                 # update number of isolated blocks　　その列に、下にブロックがない孤立したブロックの数を１増やす
 
             if hasBlock == True and hasHole == False: #hasblockがTrueでhasholeがFalseなら、フルで埋まっている
@@ -331,6 +334,16 @@ class Block_Controller(object):
         # score = score - DyTOP_BOTTOM *10
         score = score + DyBOTTOM_Change*10
 
+
+        # score = 0
+        # score = score + fullLines * 5           # try to delete line 
+        # score = score - nHoles_Add *  25             # try not to make hole   これを10倍にしたらめっちゃスコア上がった
+        # score = score - nIsolatedBlocks * 20     # try not to make isolated block
+        # score = score - absDy * 5                # try to put block smoothly
+        # # score = score - DyTOP_Change * 19              # try to put block smoothly
+        # # score = score - DyTOP_BOTTOM *10
+        # score = score + DyBOTTOM_Change*10
+
         # if LIST_TOP_prev>=10:
         #     score = score - DyTOP_Change*10
 
@@ -342,6 +355,6 @@ class Block_Controller(object):
         #score = score - stdDY * 0.01               # statistical data
 
         # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
-        return score,nHoles,LIST_TOP_Current,LIST_BOTTOM_Current,Right_Side_Exist,fullLine_CANDIDATE
+        return score,nHoles,LIST_TOP_Current,LIST_BOTTOM_Current,Right_Side_Exist,fullLine_CANDIDATE,Right_Side_TOP_Current
 
 BLOCK_CONTROLLER = Block_Controller()
