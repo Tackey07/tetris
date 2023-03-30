@@ -68,7 +68,7 @@ class Block_Controller(object):
         HoldShapeIndex = GameStatus["block_info"]["holdShape"]["index"]  #この変数に、現在のshapeがとりうる回転状態のリストを受け取ります。
         self.HoldShape_class = GameStatus["block_info"]["holdShape"]["class"]
         
-        EvalValue_org ,nHoles_org,LIST_TOP_org,LIST_BOTTOM_org,Right_Side_Exist_org,fullLine_CANDIDATE_org,Right_Side_TOP_org= self.calcEvaluationValueSample(self.board_backboard,"Start",0,0,0)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
+        EvalValue_org ,nHoles_org,LIST_TOP_org,LIST_BOTTOM_org,Right_Side_Exist_org,fullLine_CANDIDATE_org,Right_Side_TOP_org,Valley_Index_org= self.calcEvaluationValueSample(self.board_backboard,"Start",0,0,0)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
         # print(f"EvalValue_org,nHoles_org,LIST_TOP_org,LIST_BOTTOM_org,Right_Side_Exist_org,fullLine_CANDIDATE_org={EvalValue_org}, {nHoles_org}, {LIST_TOP_org}, {LIST_BOTTOM_org} ,{Right_Side_Exist_org}, {fullLine_Candidate_org}")
     
         # search best nextMove -->
@@ -76,48 +76,72 @@ class Block_Controller(object):
         LatestEvalValue = -100000
         CHECKMATE="n"
         # search with current block Shape
-        for UseHold0 in ["n","y"]:   #次の手でhold機能を使うかどうかを評価するforループ（holdされたミノとの交換を行うかどうか）
-            if UseHold0=="n" :   #holdとの交換を行わない場合は、
-                TargetShapeRange=CurrentShapeDirectionRange   #for文を回し評価する対象をCurrentShapeとする。
-                targetShape_class= self.CurrentShape_class
-                TargetIndex=CurrentShapeIndex
+        if LIST_BOTTOM_org<15:
+            if CurrentShapeIndex==1:
+                Target_Option=["n","y"]
+            else:
+                Target_Option=["n","y"]
+        else:
+            Target_Option=["n","y"]
 
-            else:                #holdとの交換を行う場合は、
-                TargetShapeRange=HoldShapeDirectionRange      #for文を回し評価する対象をHoldShapeとする。
-                targetShape_class= self.HoldShape_class
-                TargetIndex=HoldShapeIndex
-            if fullLine_CANDIDATE_org>=4 and Right_Side_TOP_org<LIST_TOP_org:
-                if TargetIndex==1:
-                    CHECKMATE = "y1"     #変数UseHold0が"y"なら、holdされたミノに交換されてnextMove操作を実行。
-                if TargetIndex==2:
-                    CHECKMATE=="y2"
-                   
+        Valley_Attack="n"
+        
+        if len(Valley_Index_org)>0:
+            if CurrentShapeIndex==1:
+                Valley_Attack="y"
+                strategy = [0,Valley_Index_org[0],1,1,"n"]
+            elif HoldShapeIndex==1:
+                Valley_Attack="y"
+                strategy = [0,Valley_Index_org[0],1,1,"y"]
+        else:
+            Valley_Attack="n"
 
-            if CHECKMATE=="n":
-                for direction0 in TargetShapeRange:               
-                                        # search with x range
-                    x0Min, x0Max = self.getSearchXRange(targetShape_class, direction0)
-                    if nHoles_org==0 and fullLine_CANDIDATE_org<=4:
-                        x0Adj=x0Max-1
-                    # elif nHoles_org==0 and LIST_TOP_org<8:
-                    #     x0Adj=x0Max-1
-                    else:
-                        x0Adj=x0Max
-                    for x0 in range(x0Min, x0Adj):
-                        # get board data, as if dropdown block
-                        board = self.getBoard(self.board_backboard, targetShape_class, direction0, x0)
-                        # evaluate board
-                        EvalValue_eval ,nHoles_eval,LIST_TOP_eval,LIST_BOTTOM_eval,Right_Side_Exist_eval,fullLine_CANDIDATE_eval,Right_Side_TOP_eval= self.calcEvaluationValueSample(board,"Evaluate",nHoles_org,LIST_TOP_org,LIST_BOTTOM_org)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
-                        # print(f"absDy_org={absDy_org}")
-                        # print(f"absDy_eval={absDy_eval}")
-                        if EvalValue_eval > LatestEvalValue:
-                            strategy = (direction0, x0, 1, 1,UseHold0)     #変数UseHold0が"y"なら、holdされたミノに交換されてnextMove操作を実行。
-                            LatestEvalValue = EvalValue_eval
-            if CHECKMATE=="y1":
-                strategy = (0, 9, 1, 1,UseHold0)
-                break
-            if CHECKMATE=="y2":
-                strategy = (2, 8, 1, 1,UseHold0)
+
+        if Valley_Attack=="n":
+            for UseHold0 in Target_Option:   #次の手でhold機能を使うかどうかを評価するforループ（holdされたミノとの交換を行うかどうか）
+                if UseHold0=="n" :   #holdとの交換を行わない場合は、
+                    TargetShapeRange=CurrentShapeDirectionRange   #for文を回し評価する対象をCurrentShapeとする。
+                    targetShape_class= self.CurrentShape_class
+                    TargetIndex=CurrentShapeIndex
+
+                else:                #holdとの交換を行う場合は、
+                    TargetShapeRange=HoldShapeDirectionRange      #for文を回し評価する対象をHoldShapeとする。
+                    targetShape_class= self.HoldShape_class
+                    TargetIndex=HoldShapeIndex
+                if fullLine_CANDIDATE_org>=4 and Right_Side_TOP_org<LIST_TOP_org:
+
+                    if TargetIndex==1:
+                        CHECKMATE = "y1"     #変数UseHold0が"y"なら、holdされたミノに交換されてnextMove操作を実行。
+                    if TargetIndex==2:
+                        CHECKMATE=="y2"
+                    
+
+                if CHECKMATE=="n":
+                    for direction0 in TargetShapeRange:               
+                                            # search with x range
+                        x0Min, x0Max = self.getSearchXRange(targetShape_class, direction0)
+                        if nHoles_org==0 and fullLine_CANDIDATE_org<=4:
+                            x0Adj=x0Max-1
+                        # elif nHoles_org==0 and LIST_TOP_org<8:
+                        #     x0Adj=x0Max-1
+                        else:
+                            x0Adj=x0Max
+                        for x0 in range(x0Min, x0Adj):
+                            # get board data, as if dropdown block
+                            board = self.getBoard(self.board_backboard, targetShape_class, direction0, x0)
+                            # evaluate board
+                            EvalValue_eval ,nHoles_eval,LIST_TOP_eval,LIST_BOTTOM_eval,Right_Side_Exist_eval,fullLine_CANDIDATE_eval,Right_Side_TOP_eval,Valley_Index_eval= self.calcEvaluationValueSample(board,"Evaluate",nHoles_org,LIST_TOP_org,LIST_BOTTOM_org)  #ボード配列を評価しscore値を受け取る。〈fulllines等に掛ける係数を入力するようにしました〉
+                            # print(f"absDy_org={absDy_org}")
+                            # print(f"absDy_eval={absDy_eval}")
+                            if EvalValue_eval > LatestEvalValue:
+                                strategy = (direction0, x0, 1, 1,UseHold0)     #変数UseHold0が"y"なら、holdされたミノに交換されてnextMove操作を実行。
+                                LatestEvalValue = EvalValue_eval
+                if CHECKMATE=="y1":
+                    strategy = (0, 9, 1, 1,UseHold0)
+                    break
+                if CHECKMATE=="y2":
+                    strategy = (2, 8, 1, 1,UseHold0)
+                    break
 
                 ###test
                 ###for direction1 in NextShapeDirectionRange:
@@ -229,10 +253,26 @@ class Block_Controller(object):
                 xTOP_LIST.append(0)
         # print(" ",xTOP_LIST)
 
-        CappedValley=False
-        for x in range(10):
-            if xLIST[x]==1 and xLIST[x+1]==0 and xLIST[x+2]==0:
-                CappedValley=True
+        # CappedValley=False
+        # for x in range(10):
+        #     if xLIST[x]==1 and xLIST[x+1]==0 and xLIST[x+2]==0:
+        #         CappedValley=True
+
+        Valley_Index=[]
+        for x in range(0,10):
+            if x==0:
+                LEFT_CLIFF=22
+                RIGHT_CLIFF=xTOP_LIST[x+1]
+            elif x==9:
+                LEFT_CLIFF=xTOP_LIST[x-1]
+                RIGHT_CLIFF=22
+            else:
+                LEFT_CLIFF=xTOP_LIST[x-1]
+                RIGHT_CLIFF=xTOP_LIST[x+1]
+
+            if LEFT_CLIFF>xTOP_LIST[x]+3 and RIGHT_CLIFF>xTOP_LIST[x]+3:
+                Valley_Index.append(x)
+
 
         LIST_BOTTOM_Current=min(xTOP_LIST[0:9])
         LIST_BOTTOM_INDEX=xTOP_LIST[0:9].index(LIST_BOTTOM_Current)
@@ -355,6 +395,6 @@ class Block_Controller(object):
         #score = score - stdDY * 0.01               # statistical data
 
         # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
-        return score,nHoles,LIST_TOP_Current,LIST_BOTTOM_Current,Right_Side_Exist,fullLine_CANDIDATE,Right_Side_TOP_Current
+        return score,nHoles,LIST_TOP_Current,LIST_BOTTOM_Current,Right_Side_Exist,fullLine_CANDIDATE,Right_Side_TOP_Current,Valley_Index
 
 BLOCK_CONTROLLER = Block_Controller()
