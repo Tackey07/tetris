@@ -76,13 +76,14 @@ class Block_Controller(object):
         LatestEvalValue = -100000
         CHECKMATE="n"
         # search with current block Shape
-        if LIST_BOTTOM_org<15:
-            if CurrentShapeIndex==1:
-                Target_Option=["n","y"]
-            else:
-                Target_Option=["n","y"]
-        else:
-            Target_Option=["n","y"]
+        # if LIST_BOTTOM_org<15:
+        #     if CurrentShapeIndex==1:
+        #         Target_Option=["n","y"]
+        #     else:
+        #         Target_Option=["n","y"]
+        # else:
+        #     Target_Option=["n","y"]
+        Target_Option=["n","y"]
 
         Valley_Attack="n"
         
@@ -367,9 +368,9 @@ class Block_Controller(object):
         # calc Evaluation Value
         score = 0
         score = score + fullLines * 5           # try to delete line 
-        score = score - nHoles_Add *  25             # try not to make hole   これを10倍にしたらめっちゃスコア上がった
+        score = score - nHoles_Add *  20             # try not to make hole   これを10倍にしたらめっちゃスコア上がった
         score = score - nIsolatedBlocks * 20     # try not to make isolated block
-        score = score - absDy * 5                # try to put block smoothly
+        score = score - absDy * 1                # try to put block smoothly
         # score = score - DyTOP_Change * 19              # try to put block smoothly
         # score = score - DyTOP_BOTTOM *10
         score = score + DyBOTTOM_Change*10
