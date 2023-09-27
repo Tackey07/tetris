@@ -17,13 +17,13 @@ import glob
 import numpy as np
 import yaml
 
-class mycounter_func:  #何回実行されたかをカウントするクラス。
-    def __init__(self):
-        self.x = 0
-    def __call__(self):
-        self.x += 1
-        return self.x
-mycounter = mycounter_func()  #mycounter()を呼び出すたびに、値が１ずつ増える
+# class mycounter_func:  #何回実行されたかをカウントするクラス。
+#     def __init__(self):
+#         self.x = 0
+#     def __call__(self):
+#         self.x += 1
+#         return self.x
+# mycounter = mycounter_func()  #mycounter()を呼び出すたびに、値が１ずつ増える
 
 
 ###################################################
@@ -33,11 +33,11 @@ mycounter = mycounter_func()  #mycounter()を呼び出すたびに、値が１�
 ###################################################
 
 class Block_Controller(object):
-    COUNTER=mycounter()
-    print("COUNTER="+str(COUNTER))
-    if COUNTER==1:
-        print("The first epoch")
-        TrialName=input("Input Trial Name")
+    # COUNTER=mycounter()
+    # print("COUNTER="+str(COUNTER))
+    # if COUNTER==1:
+    #     print("The first epoch")
+    #     TrialName=input("Input Trial Name")
     
         
     ####################################
@@ -132,7 +132,7 @@ class Block_Controller(object):
         #ログ
         with open(self.log,"w") as f:
             print("start...", file=f)
-            print("Trial_Name=",self.TrialName,file=f)
+            # print("Trial_Name=",self.TrialName,file=f)
             print("Trial_Mode=",self.mode,file=f)
         #スコアログ
         with open(self.log_score,"w") as f:
